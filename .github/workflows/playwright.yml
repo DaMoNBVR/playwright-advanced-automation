@@ -1,0 +1,39 @@
+name: Playwright Tests
+
+# 1. EL GATILLO: ¿Cuándo corre esto? Cuando haces push a la rama 'main'
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest # 2. LA MÁQUINA: Rentamos un servidor Linux (Ubuntu)
+
+    steps:
+    - uses: actions/checkout@v4 # 3. Descarga tu código al servidor
+
+    - uses: actions/setup-node@v4 # 4. Instala Node.js
+      with:
+        node-version: 18
+
+    - name: Instalar dependencias
+      run: npm ci # 'ci' es más estricto y limpio que 'install' para servidores
+
+    - name: Instalar Navegadores de Playwright
+      run: npx playwright install --with-deps
+
+    - name: Ejecutar pruebas de Playwright
+      run: npx playwright test
+      env: # 5. INYECCIÓN DE SECRETOS: Conectamos la bóveda de GitHub con tu código
+        SAUCE_USERNAME: ${{ secrets.SAUCE_USERNAME }}
+        SAUCE_PASSWORD: ${{ secrets.SAUCE_PASSWORD }}
+        URL_BASE: https://www.saucedemo.com/
+
+    - name: Guardar Reporte Visual (Artifact)
+      uses: actions/upload-artifact@v4
+      if: always() # 6. Siempre guarda el reporte, incluso si la prueba falla (súper importante)
+      with:
+        name: reporte-playwright
+        path: playwright-report/
+        retention-days: 15
